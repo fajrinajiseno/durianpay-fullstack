@@ -1,0 +1,247 @@
+openapi: 3.0.3
+info:
+  title: MyGoLangApp API
+  version: "1.0.0"
+servers:
+  - url: http://localhost:8080
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  
+  parameters:
+    limit:
+      name: limit
+      in: query
+      description: Limit number of items to return (max 100)
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+
+    offset:
+      name: offset
+      in: query
+      description: Offset from start (0-based)
+      required: false
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+    
+    sort:
+      name: sort
+      in: query
+      description: >
+        Comma-separated sort fields. Common patterns:
+        `-created_at` (prefix `-` = desc)
+        `amount` (no prefix `-` = asc)
+      required: false
+      schema:
+        type: string
+        example: "-created_at"
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 401
+        message:
+          type: string
+          example: "Unauthenticated: missing or invalid token"
+      required:
+        - code
+        - message
+    
+    User:
+      type: object
+      properties:
+        email:
+          type: string
+        role:
+          type: string
+        token:
+          type: string
+
+    Payment:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "1"
+        merchant:
+          type: string
+          example: "Merchant A"
+        status:
+          type: string
+          example: "completed , processing , or failed"
+        amount:
+          type: string
+          example: "alice@example.com"
+        created_at:
+          type: string
+          format: date-time
+    
+    PaginationMeta:
+      type: object
+      properties:
+        total:
+          type: integer
+          description: Total number of items
+          example: 100
+        limit:
+          type: integer
+          description: Limit or page size used
+          example: 10
+        offset:
+          type: integer
+          description: Offset used
+          example: 10
+
+    PaymentSummary:
+      type: object
+      properties:
+        success:
+          type: integer
+          description: Total number of success payment
+          example: 40
+        failed:
+          type: integer
+          description: Total number of failed payment
+          example: 10
+
+  responses:
+    LoginResponse:
+      description: return token and user information
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/User'
+    PaymentListResponse:
+      description: Payment List
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              meta:
+                $ref: '#/components/schemas/PaginationMeta'
+              summary:
+                $ref: '#/components/schemas/PaymentSummary'
+              payments:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Payment'
+    PaymentReviewResponse:
+      description: Payment review message
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "Success Mark as Reviewed"
+    UnauthorizedError:
+      description: Authentication failed or missing credentials
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            unauthenticated:
+              summary: Missing or invalid token
+              value:
+                code: 401
+                message: "Unauthenticated: missing or invalid token"
+    ForbiddenError:
+      description: User is authenticated but not authorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            forbidden:
+              value:
+                code: 403
+                message: "Forbidden: you do not have permission to access this resource"
+    NotFoundError:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            forbidden:
+              value:
+                code: 403
+                message: "Not found: resource not found"
+
+paths:
+  /dashboard/v1/auth/login:
+    post:
+      summary: Login with email + password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        "200":
+          $ref: '#/components/responses/LoginResponse'
+        "401":
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /dashboard/v1/payments:
+    get:
+      summary: List of payments
+      parameters:
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/sort'
+        - in: query
+          name: status
+          schema:
+            type: string
+          description: status of payment (completed , processing , or failed)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          $ref: '#/components/responses/PaymentListResponse'
+        "401":
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /dashboard/v1/payment/{id}/review:
+    put:
+      summary: Allows marking a payment as reviewed only by operation role
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          $ref: '#/components/responses/PaymentReviewResponse'
+        "401":
+          $ref: '#/components/responses/UnauthorizedError'
+        "403":
+          $ref: '#/components/responses/ForbiddenError'
+        "404":
+          $ref: '#/components/responses/NotFoundError'
