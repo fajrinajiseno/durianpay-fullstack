@@ -8,10 +8,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/fajrinajiseno/mygolangapp/internal/api"
+	ah "github.com/fajrinajiseno/mygolangapp/internal/auth/handler"
+	aum "github.com/fajrinajiseno/mygolangapp/internal/auth/usecase/mock"
 	"github.com/fajrinajiseno/mygolangapp/internal/config"
 	"github.com/fajrinajiseno/mygolangapp/internal/entity"
+	ph "github.com/fajrinajiseno/mygolangapp/internal/payment/handler"
+	pum "github.com/fajrinajiseno/mygolangapp/internal/payment/usecase/mock"
 	srv "github.com/fajrinajiseno/mygolangapp/internal/service/http"
-	"github.com/fajrinajiseno/mygolangapp/internal/usecase/mock"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
@@ -21,9 +25,18 @@ func TestProtectedEndpointWithoutToken(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mockAuthUC := mock.NewMockAuthUsecase(ctrl)
-	mockPaymentUC := mock.NewMockPaymentUsecase(ctrl)
-	srv := srv.NewServer(mockPaymentUC, mockAuthUC)
+	mockAuthUC := aum.NewMockAuthUsecase(ctrl)
+	mockPaymentUC := pum.NewMockPaymentUsecase(ctrl)
+
+	authH := ah.NewAuthHandler(mockPaymentUC, mockAuthUC)
+	paymentH := ph.NewPaymentHandler(mockPaymentUC)
+
+	apiHandler := &api.APIHandler{
+		Auth:    authH,
+		Payment: paymentH,
+	}
+
+	srv := srv.NewServer(apiHandler)
 	ts := httptest.NewServer(srv.Routes())
 	defer ts.Close()
 
@@ -46,7 +59,7 @@ func TestLoginAndAccessProtected(t *testing.T) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	signed, err := token.SignedString(config.JwtSecret)
 
-	mockAuthUC := mock.NewMockAuthUsecase(ctrl)
+	mockAuthUC := aum.NewMockAuthUsecase(ctrl)
 	mockAuthUC.EXPECT().
 		Login("alice@example.com", "password").
 		Return(signed, &entity.User{
@@ -56,8 +69,8 @@ func TestLoginAndAccessProtected(t *testing.T) {
 			Role:         "operation",
 		}, nil)
 
-	mockUserUC := mock.NewMockPaymentUsecase(ctrl)
-	mockUserUC.EXPECT().
+	mockPaymentUC := pum.NewMockPaymentUsecase(ctrl)
+	mockPaymentUC.EXPECT().
 		ListPayment("completed", "-created_at", 10, 1).
 		Return([]*entity.Payment{
 			{ID: "1",
@@ -66,11 +79,19 @@ func TestLoginAndAccessProtected(t *testing.T) {
 				Amount:    100,
 				CreatedAt: time.Now()},
 		}, 5, 2, 3, nil)
-	mockUserUC.EXPECT().
+	mockPaymentUC.EXPECT().
 		ReviewPayment(gomock.Any(), "1").
 		Return("Success Review", nil)
 
-	srv := srv.NewServer(mockUserUC, mockAuthUC)
+	authH := ah.NewAuthHandler(mockPaymentUC, mockAuthUC)
+	paymentH := ph.NewPaymentHandler(mockPaymentUC)
+
+	apiHandler := &api.APIHandler{
+		Auth:    authH,
+		Payment: paymentH,
+	}
+
+	srv := srv.NewServer(apiHandler)
 	ts := httptest.NewServer(srv.Routes())
 	defer ts.Close()
 

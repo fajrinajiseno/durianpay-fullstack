@@ -6,9 +6,10 @@ import (
 	"testing"
 	"time"
 
+	am "github.com/fajrinajiseno/mygolangapp/internal/auth/repository/mock"
 	"github.com/fajrinajiseno/mygolangapp/internal/config"
 	"github.com/fajrinajiseno/mygolangapp/internal/entity"
-	"github.com/fajrinajiseno/mygolangapp/internal/repository/mock"
+	pm "github.com/fajrinajiseno/mygolangapp/internal/payment/repository/mock"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
@@ -25,8 +26,8 @@ func TestPayment_ListPayment(t *testing.T) {
 			CreatedAt: time.Now()},
 	}
 
-	mockPaymentRepo := mock.NewMockPaymentRepository(ctrl)
-	mockUserRepo := mock.NewMockUserRepository(ctrl)
+	mockPaymentRepo := pm.NewMockPaymentRepository(ctrl)
+	mockUserRepo := am.NewMockUserRepository(ctrl)
 
 	t.Run("success", func(t *testing.T) {
 		mockPaymentRepo.EXPECT().
@@ -60,8 +61,8 @@ func TestPayment_ReviewPayment(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mockPaymentRepo := mock.NewMockPaymentRepository(ctrl)
-	mockUserRepo := mock.NewMockUserRepository(ctrl)
+	mockPaymentRepo := pm.NewMockPaymentRepository(ctrl)
+	mockUserRepo := am.NewMockUserRepository(ctrl)
 
 	t.Run("GetUserById middleware return empty", func(t *testing.T) {
 		u := NewPaymentUsecase(mockPaymentRepo, mockUserRepo)

@@ -1,41 +1,27 @@
-package http
+package handler
 
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 
 	"github.com/fajrinajiseno/mygolangapp/internal/entity"
 	"github.com/fajrinajiseno/mygolangapp/internal/openapigen"
+	"github.com/fajrinajiseno/mygolangapp/internal/payment/usecase"
 	"github.com/fajrinajiseno/mygolangapp/internal/transport"
-	"github.com/fajrinajiseno/mygolangapp/internal/usecase"
 )
 
-type apiHandler struct {
+type PaymentHandler struct {
 	paymentUC usecase.PaymentUsecase
-	authUC    usecase.AuthUsecase
 }
 
-func (a *apiHandler) PostDashboardV1AuthLogin(w http.ResponseWriter, r *http.Request) {
-	var req openapigen.PostDashboardV1AuthLoginJSONBody
-	if !decodeJSONBody(w, r, &req) {
-		return
-	}
-	token, user, err := a.authUC.Login(req.Email, req.Password)
-	if err != nil {
-		transport.WriteError(w, err)
-		return
-	}
-
-	err = json.NewEncoder(w).Encode(openapigen.LoginResponse{Email: &user.Email, Role: &user.Role, Token: &token})
-	if err != nil {
-		transport.WriteAppError(w, entity.ErrorInternal("internal server error"))
-		return
+func NewPaymentHandler(paymentUC usecase.PaymentUsecase) *PaymentHandler {
+	return &PaymentHandler{
+		paymentUC: paymentUC,
 	}
 }
 
-func (a *apiHandler) GetDashboardV1Payments(w http.ResponseWriter, r *http.Request, body openapigen.GetDashboardV1PaymentsParams) {
+func (a *PaymentHandler) GetDashboardV1Payments(w http.ResponseWriter, r *http.Request, body openapigen.GetDashboardV1PaymentsParams) {
 	limit := 10
 	offset := 0
 	sort := "-created_at"
@@ -87,7 +73,7 @@ func (a *apiHandler) GetDashboardV1Payments(w http.ResponseWriter, r *http.Reque
 	}
 }
 
-func (a *apiHandler) PutDashboardV1PaymentIdReview(w http.ResponseWriter, r *http.Request, id string) {
+func (a *PaymentHandler) PutDashboardV1PaymentIdReview(w http.ResponseWriter, r *http.Request, id string) {
 	message, err := a.paymentUC.ReviewPayment(r.Context(), id)
 	if err != nil {
 		transport.WriteError(w, err)
@@ -98,23 +84,4 @@ func (a *apiHandler) PutDashboardV1PaymentIdReview(w http.ResponseWriter, r *htt
 		transport.WriteAppError(w, entity.ErrorInternal("internal server error"))
 		return
 	}
-}
-
-func decodeJSONBody(w http.ResponseWriter, r *http.Request, dst any) bool {
-	if r.Body == nil {
-		transport.WriteAppError(w, entity.ErrorBadRequest("empty body"))
-		return false
-	}
-
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		transport.WriteAppError(w, entity.ErrorBadRequest("failed to read body"))
-		return false
-	}
-
-	if err := json.Unmarshal(body, dst); err != nil {
-		transport.WriteAppError(w, entity.ErrorBadRequest("invalid json: "+err.Error()))
-		return false
-	}
-	return true
 }

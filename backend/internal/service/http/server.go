@@ -4,20 +4,20 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/fajrinajiseno/mygolangapp/internal/middleware"
 	"github.com/fajrinajiseno/mygolangapp/internal/openapigen"
-	"github.com/fajrinajiseno/mygolangapp/internal/usecase"
 	"github.com/getkin/kin-openapi/openapi3filter"
 	"github.com/go-chi/chi/v5"
 	oapinethttpmw "github.com/oapi-codegen/nethttp-middleware"
+	swgui "github.com/swaggest/swgui/v5"
+	"sigs.k8s.io/yaml"
 )
 
 type Server struct {
-	paymentUC usecase.PaymentUsecase
-	authUC    usecase.AuthUsecase
-	router    http.Handler
+	router http.Handler
 }
 
 const (
@@ -26,56 +26,65 @@ const (
 	idleTimeout  = 60
 )
 
-func NewServer(paymentUC usecase.PaymentUsecase, authUC usecase.AuthUsecase) *Server {
+func NewServer(apiHandler openapigen.ServerInterface) *Server {
 	swagger, err := openapigen.GetSwagger()
 	if err != nil {
 		log.Fatalf("failed to load swagger: %v", err)
+	}
+	openapiJSON, err := loadOpenAPIAsJSON("../openapi.yaml")
+	if err != nil {
+		log.Fatalf("failed to loadOpenAPIAsJSON: %v", err)
 	}
 
 	r := chi.NewRouter()
 
 	r.Use(middleware.LoggingMiddleware)
-	r.Use(oapinethttpmw.OapiRequestValidatorWithOptions(
-		swagger,
-		&oapinethttpmw.Options{
-			Options: openapi3filter.Options{
-				AuthenticationFunc: middleware.AuthMiddleware,
-			},
-			ErrorHandler: func(w http.ResponseWriter, message string, statusCode int) {
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(statusCode)
-
-				resp := struct {
-					Code    int    `json:"code"`
-					Message string `json:"message"`
-				}{
-					Code:    statusCode,
-					Message: message,
-				}
-
-				err := json.NewEncoder(w).Encode(resp)
-				if err != nil {
-					http.Error(w, "internal server error", http.StatusInternalServerError)
-					return
-				}
-			},
-			DoNotValidateServers:  true,
-			SilenceServersWarning: true,
-		},
-	))
 	r.Use(middleware.ContextMiddleware)
 
-	apiHandler := &apiHandler{
-		authUC:    authUC,
-		paymentUC: paymentUC,
-	}
+	r.Get("/openapi.json", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(openapiJSON)
+	})
 
-	openapigen.HandlerFromMux(apiHandler, r)
+	r.Handle("/docs/*", swgui.New("Dashboard API Docs", "/openapi.json", "/docs/"))
+	r.Get("/docs", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/docs/", http.StatusTemporaryRedirect)
+	})
+
+	r.Route("/", func(api chi.Router) {
+		api.Use(oapinethttpmw.OapiRequestValidatorWithOptions(
+			swagger,
+			&oapinethttpmw.Options{
+				Options: openapi3filter.Options{
+					AuthenticationFunc: middleware.AuthMiddleware,
+				},
+				ErrorHandler: func(w http.ResponseWriter, message string, statusCode int) {
+					w.Header().Set("Content-Type", "application/json")
+					w.WriteHeader(statusCode)
+
+					resp := struct {
+						Code    int    `json:"code"`
+						Message string `json:"message"`
+					}{
+						Code:    statusCode,
+						Message: message,
+					}
+
+					err := json.NewEncoder(w).Encode(resp)
+					if err != nil {
+						http.Error(w, "internal server error", http.StatusInternalServerError)
+						return
+					}
+				},
+				DoNotValidateServers:  true,
+				SilenceServersWarning: true,
+			},
+		))
+		openapigen.HandlerFromMux(apiHandler, api)
+	})
 
 	return &Server{
-		paymentUC: paymentUC,
-		authUC:    authUC,
-		router:    r,
+		router: r,
 	}
 }
 
@@ -96,4 +105,26 @@ func (s *Server) Start(addr string) {
 
 func (s *Server) Routes() http.Handler {
 	return s.router
+}
+
+func loadOpenAPIAsJSON(yamlPath string) ([]byte, error) {
+	// Prefer embedded file if present by uncommenting and returning it here.
+
+	// read yaml file
+	yamlData, err := os.ReadFile(yamlPath)
+	if err != nil {
+		return nil, err
+	}
+	// convert YAML to JSON (preserves structure)
+	jsonData, err := yaml.YAMLToJSON(yamlData)
+	if err != nil {
+		return nil, err
+	}
+	// Optionally prettify:
+	var pretty json.RawMessage
+	if err := json.Unmarshal(jsonData, &pretty); err == nil {
+		out, _ := json.MarshalIndent(pretty, "", "  ")
+		return out, nil
+	}
+	return jsonData, nil
 }

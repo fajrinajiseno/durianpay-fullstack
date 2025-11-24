@@ -3,8 +3,8 @@ package usecase
 import (
 	"time"
 
+	"github.com/fajrinajiseno/mygolangapp/internal/auth/repository"
 	"github.com/fajrinajiseno/mygolangapp/internal/entity"
-	"github.com/fajrinajiseno/mygolangapp/internal/repository"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 )

@@ -3,9 +3,10 @@ package usecase
 import (
 	"context"
 
+	authRepository "github.com/fajrinajiseno/mygolangapp/internal/auth/repository"
 	"github.com/fajrinajiseno/mygolangapp/internal/entity"
 	"github.com/fajrinajiseno/mygolangapp/internal/middleware"
-	"github.com/fajrinajiseno/mygolangapp/internal/repository"
+	paymentRepository "github.com/fajrinajiseno/mygolangapp/internal/payment/repository"
 )
 
 //go:generate mockgen -source payment.go -destination mock/payment_mock.go -package=mock
@@ -15,11 +16,11 @@ type PaymentUsecase interface {
 }
 
 type Payment struct {
-	userRepo    repository.UserRepository
-	paymentRepo repository.PaymentRepository
+	userRepo    authRepository.UserRepository
+	paymentRepo paymentRepository.PaymentRepository
 }
 
-func NewPaymentUsecase(pr repository.PaymentRepository, ur repository.UserRepository) *Payment {
+func NewPaymentUsecase(pr paymentRepository.PaymentRepository, ur authRepository.UserRepository) *Payment {
 	return &Payment{paymentRepo: pr, userRepo: ur}
 }
 

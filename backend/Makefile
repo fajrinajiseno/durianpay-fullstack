@@ -41,9 +41,6 @@ build:
 tool-lint:
 	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 
-tool-coverage:
-	@go install github.com/boumenot/gocover-cobertura@v1.2.0
-
 fmt:
 	@echo "🧹 Formatting Go code..."
 	@go fmt ./...
@@ -61,10 +58,6 @@ test:
 coverage:
 	@go test -race -cover -coverprofile=coverage.out -json ${GO_PACKAGES} > ./unit-test-report.json
 	@go tool cover -func=coverage.out
-
-coverage-report: tool-coverage
-	@gocover-cobertura < coverage.out > coverage.xml
-	@sed -i 's;filename=\"go.bukalapak.io/buka20/o2o-new-vertical/mitra_bangunan_backend/;filename=\";g' coverage.xml
 
 coverage-html: coverage
 	@go tool cover -html=coverage.out

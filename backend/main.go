@@ -5,10 +5,15 @@ import (
 	"log"
 	"time"
 
+	"github.com/fajrinajiseno/mygolangapp/internal/api"
+	ah "github.com/fajrinajiseno/mygolangapp/internal/auth/handler"
+	ar "github.com/fajrinajiseno/mygolangapp/internal/auth/repository"
+	au "github.com/fajrinajiseno/mygolangapp/internal/auth/usecase"
 	"github.com/fajrinajiseno/mygolangapp/internal/config"
-	"github.com/fajrinajiseno/mygolangapp/internal/repository"
+	ph "github.com/fajrinajiseno/mygolangapp/internal/payment/handler"
+	pr "github.com/fajrinajiseno/mygolangapp/internal/payment/repository"
+	pu "github.com/fajrinajiseno/mygolangapp/internal/payment/usecase"
 	srv "github.com/fajrinajiseno/mygolangapp/internal/service/http"
-	uc "github.com/fajrinajiseno/mygolangapp/internal/usecase"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/joho/godotenv"
 	_ "github.com/mattn/go-sqlite3"
@@ -33,13 +38,21 @@ func main() {
 		log.Fatal(err)
 	}
 
-	userRepo := repository.NewUserRepo(db)
-	paymentRepo := repository.NewPaymentRepo(db)
+	userRepo := ar.NewUserRepo(db)
+	paymentRepo := pr.NewPaymentRepo(db)
 
-	authUC := uc.NewAuthUsecase(userRepo, config.JwtSecret, hour24*time.Hour)
-	paymentUC := uc.NewPaymentUsecase(paymentRepo, userRepo)
+	authUC := au.NewAuthUsecase(userRepo, config.JwtSecret, hour24*time.Hour)
+	paymentUC := pu.NewPaymentUsecase(paymentRepo, userRepo)
 
-	server := srv.NewServer(paymentUC, authUC)
+	authH := ah.NewAuthHandler(paymentUC, authUC)
+	paymentH := ph.NewPaymentHandler(paymentUC)
+
+	apiHandler := &api.APIHandler{
+		Auth:    authH,
+		Payment: paymentH,
+	}
+
+	server := srv.NewServer(apiHandler)
 
 	addr := config.HttpAddress
 	log.Printf("starting server on %s", addr)
