@@ -1,0 +1,63 @@
+run:
+  timeout: 3m
+  tests: true
+  allow-parallel-runners: true
+
+linters:
+  # source: https://golangci-lint.run/usage/linters
+  # enable other non default linters
+
+  enable:
+     # --- Core linters ---
+    - govet
+    - staticcheck
+    - errcheck
+    - gosimple
+    - ineffassign
+    - unused
+    - typecheck
+    - gosec
+
+    # --- Style & readability ---
+    - gofmt
+    - gofumpt
+    - revive
+    - misspell
+    - nolintlint
+    - whitespace
+
+    # --- Code quality ---
+    - gocyclo
+    - dupl
+    - prealloc
+    - nakedret
+    - unparam
+    - mnd
+
+    # --- Import & structure ---
+    - gci
+    # - depguard
+  disable:
+    - funlen
+    - lll
+    - gochecknoglobals
+    - gochecknoinits
+    - wsl
+    - exhaustive
+
+linters-settings:
+  dupl:
+    threshold: 150
+  gocyclo:
+    min-complexity: 15
+  revive:
+    confidence: 0.8
+  misspell:
+    locale: US
+
+issues:
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - errcheck
+        - gocyclo

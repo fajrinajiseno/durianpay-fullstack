@@ -1,0 +1,125 @@
+package main
+
+import (
+	"database/sql"
+	"log"
+	"time"
+
+	"github.com/fajrinajiseno/mygolangapp/internal/config"
+	"github.com/fajrinajiseno/mygolangapp/internal/repository"
+	srv "github.com/fajrinajiseno/mygolangapp/internal/service/http"
+	uc "github.com/fajrinajiseno/mygolangapp/internal/usecase"
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/joho/godotenv"
+	_ "github.com/mattn/go-sqlite3"
+	"golang.org/x/crypto/bcrypt"
+)
+
+const (
+	sleepSecond = 2
+	hour24      = 24
+)
+
+func main() {
+	_ = godotenv.Load()
+
+	db, err := sql.Open("sqlite3", "dashboard.db?_foreign_keys=1")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	if err := initDB(db); err != nil {
+		log.Fatal(err)
+	}
+
+	userRepo := repository.NewUserRepo(db)
+	paymentRepo := repository.NewPaymentRepo(db)
+
+	authUC := uc.NewAuthUsecase(userRepo, config.JwtSecret, hour24*time.Hour)
+	paymentUC := uc.NewPaymentUsecase(paymentRepo, userRepo)
+
+	server := srv.NewServer(paymentUC, authUC)
+
+	addr := config.HttpAddress
+	log.Printf("starting server on %s", addr)
+	server.Start(addr)
+}
+
+func initDB(db *sql.DB) error {
+	// create tables if not exists
+	stmts := []string{
+		`CREATE TABLE IF NOT EXISTS users (
+		  id INTEGER PRIMARY KEY AUTOINCREMENT,
+		  email TEXT NOT NULL UNIQUE,
+		  password_hash TEXT NOT NULL,
+		  role TEXT NOT NULL
+		);`,
+		`CREATE TABLE IF NOT EXISTS payments (
+		  id INTEGER PRIMARY KEY AUTOINCREMENT,
+		  merchant TEXT NOT NULL,
+		  status TEXT NOT NULL,
+		  amount REAL NOT NULL,
+		  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+		);`,
+	}
+	for _, s := range stmts {
+		if _, err := db.Exec(s); err != nil {
+			return err
+		}
+	}
+	// seed payments if empty
+	var cnt int
+	row := db.QueryRow("SELECT COUNT(1) FROM payments")
+	if err := row.Scan(&cnt); err != nil {
+		return err
+	}
+	if cnt == 0 {
+		payments := []struct {
+			merchant  string
+			amount    float64
+			status    string
+			createdAt string
+		}{
+			{"merchant 1", 100.0, "pending", time.Now().Format(time.RFC3339)},
+			{"merchant 2", 200.0, "completed", time.Now().Format(time.RFC3339)},
+			{"merchant 3", 150.5, "failed", time.Now().Add(-24 * time.Hour).Format(time.RFC3339)},
+			{"merchant 4", 100.0, "pending", time.Now().Add(-24 * time.Hour).Format(time.RFC3339)},
+			{"merchant 5", 200.0, "completed", time.Now().Add(-24 * time.Hour).Format(time.RFC3339)},
+			{"merchant 6", 150.5, "failed", time.Now().Add(-24 * time.Hour).Format(time.RFC3339)},
+			{"merchant 7", 100.0, "pending", time.Now().Add(-24 * time.Hour).Format(time.RFC3339)},
+			{"merchant 8", 200.0, "completed", time.Now().Add(-48 * time.Hour).Format(time.RFC3339)},
+			{"merchant 9", 150.5, "failed", time.Now().Add(-48 * time.Hour).Format(time.RFC3339)},
+			{"merchant 10", 100.0, "pending", time.Now().Add(-48 * time.Hour).Format(time.RFC3339)},
+			{"merchant 11", 200.0, "completed", time.Now().Add(-48 * time.Hour).Format(time.RFC3339)},
+			{"merchant 12", 150.5, "failed", time.Now().Add(-48 * time.Hour).Format(time.RFC3339)},
+		}
+		for _, p := range payments {
+			if _, err := db.Exec("INSERT INTO payments(merchant, amount, status, created_at) VALUES (?, ?, ?, ?)", p.merchant, p.amount, p.status, p.createdAt); err != nil {
+				return err
+			}
+		}
+	}
+
+	// seed admin user if not exists
+	row = db.QueryRow("SELECT COUNT(1) FROM users")
+	if err := row.Scan(&cnt); err != nil {
+		return err
+	}
+	if cnt == 0 {
+		hash, err := bcrypt.GenerateFromPassword([]byte("password"), bcrypt.DefaultCost)
+		if err != nil {
+			return err
+		}
+		if _, err := db.Exec("INSERT INTO users(email, password_hash, role) VALUES (?, ?, ?)", "cs@test.com", string(hash), "cs"); err != nil {
+			return err
+		}
+		if _, err := db.Exec("INSERT INTO users(email, password_hash, role) VALUES (?, ?, ?)", "operation@test.com", string(hash), "operation"); err != nil {
+			return err
+		}
+	}
+
+	const dbLifetime = time.Minute * 5
+	db.SetConnMaxLifetime(dbLifetime)
+	return nil
+}
