@@ -9,7 +9,7 @@ import (
 	"github.com/fajrinajiseno/mygolangapp/internal/entity"
 )
 
-//go:generate mockgen -source payment.go -destination mocks/payment_mock.go -package=mock
+//go:generate mockgen -source payment.go -destination mock/payment_mock.go -package=mock
 type PaymentRepository interface {
 	GetPayments(status, sortExpr string, limit, offset int) ([]*entity.Payment, int, int, int, error)
 	Review(id string) (string, error)

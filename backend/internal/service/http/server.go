@@ -59,6 +59,7 @@ func NewServer(paymentUC usecase.PaymentUsecase, authUC usecase.AuthUsecase) *Se
 					return
 				}
 			},
+			DoNotValidateServers:  true,
 			SilenceServersWarning: true,
 		},
 	))
@@ -91,4 +92,8 @@ func (s *Server) Start(addr string) {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
+}
+
+func (s *Server) Routes() http.Handler {
+	return s.router
 }

@@ -54,7 +54,7 @@ func (a *apiHandler) GetDashboardV1Payments(w http.ResponseWriter, r *http.Reque
 	}
 
 	if body.Status != nil {
-		status = *body.Sort
+		status = *body.Status
 	}
 
 	payments, total, totalSuccess, totalFailed, err := a.paymentUC.ListPayment(status, sort, limit, offset)

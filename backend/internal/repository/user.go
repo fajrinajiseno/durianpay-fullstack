@@ -6,7 +6,7 @@ import (
 	"github.com/fajrinajiseno/mygolangapp/internal/entity"
 )
 
-//go:generate mockgen -source user.go -destination mocks/user_mock.go -package=mock
+//go:generate mockgen -source user.go -destination mock/user_mock.go -package=mock
 type UserRepository interface {
 	GetUserByEmail(email string) (*entity.User, error)
 	GetUserById(id string) (*entity.User, error)
