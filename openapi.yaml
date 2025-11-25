@@ -107,13 +107,21 @@ components:
     PaymentSummary:
       type: object
       properties:
-        success:
+        total:
           type: integer
-          description: Total number of success payment
+          description: Total all payment
           example: 40
+        completed:
+          type: integer
+          description: Total number of completed payment
+          example: 20
         failed:
           type: integer
           description: Total number of failed payment
+          example: 10
+        pending:
+          type: integer
+          description: Total number of pending payment
           example: 10
 
   responses:
@@ -217,6 +225,11 @@ paths:
           schema:
             type: string
           description: status of payment (completed , processing , or failed)
+        - in: query
+          name: id
+          schema:
+            type: string
+          description: payment id
       security:
         - bearerAuth: []
       responses:

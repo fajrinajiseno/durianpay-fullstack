@@ -6,10 +6,10 @@ import (
 	"testing"
 	"time"
 
-	am "github.com/fajrinajiseno/mygolangapp/internal/auth/repository/mock"
 	"github.com/fajrinajiseno/mygolangapp/internal/config"
 	"github.com/fajrinajiseno/mygolangapp/internal/entity"
-	pm "github.com/fajrinajiseno/mygolangapp/internal/payment/repository/mock"
+	am "github.com/fajrinajiseno/mygolangapp/internal/module/auth/repository/mock"
+	pm "github.com/fajrinajiseno/mygolangapp/internal/module/payment/repository/mock"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
@@ -19,11 +19,13 @@ func TestPayment_ListPayment(t *testing.T) {
 	defer ctrl.Finish()
 
 	expected := []*entity.Payment{
-		{ID: "1",
+		{
+			ID:        "1",
 			Merchant:  "merchant 1",
 			Status:    "completed",
 			Amount:    100,
-			CreatedAt: time.Now()},
+			CreatedAt: time.Now(),
+		},
 	}
 
 	mockPaymentRepo := pm.NewMockPaymentRepository(ctrl)
@@ -31,27 +33,35 @@ func TestPayment_ListPayment(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {
 		mockPaymentRepo.EXPECT().
-			GetPayments("completed", "created_at", 10, 1).
-			Return(expected, 1, 2, 3, nil)
+			GetPayments("completed", "1", "created_at", 10, 1).
+			Return(expected, &entity.PaymentSummary{
+				TotalByFiler:   1,
+				Total:          4,
+				TotalCompleted: 2,
+				TotalFailed:    1,
+				TotalPending:   1,
+			}, nil)
 
 		u := NewPaymentUsecase(mockPaymentRepo, mockUserRepo)
 
-		items, total, totalSuccess, totalFailed, err := u.ListPayment("completed", "created_at", 10, 1)
+		items, totalSummary, err := u.ListPayment("completed", "1", "created_at", 10, 1)
 		assert.NoError(t, err)
 		assert.Equal(t, expected, items)
-		assert.Equal(t, 1, total)
-		assert.Equal(t, 2, totalSuccess)
-		assert.Equal(t, 3, totalFailed)
+		assert.Equal(t, 1, totalSummary.TotalByFiler)
+		assert.Equal(t, 4, totalSummary.Total)
+		assert.Equal(t, 2, totalSummary.TotalCompleted)
+		assert.Equal(t, 1, totalSummary.TotalFailed)
+		assert.Equal(t, 1, totalSummary.TotalPending)
 	})
 
 	t.Run("Repo Error", func(t *testing.T) {
 		mockPaymentRepo.EXPECT().
-			GetPayments("completed", "created_at", 10, 1).
-			Return(nil, 0, 0, 0, errors.New("db fail"))
+			GetPayments("completed", "1", "created_at", 10, 1).
+			Return(nil, nil, errors.New("db fail"))
 
 		u := NewPaymentUsecase(mockPaymentRepo, mockUserRepo)
 
-		_, _, _, _, err := u.ListPayment("completed", "created_at", 10, 1)
+		_, _, err := u.ListPayment("completed", "1", "created_at", 10, 1)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "db fail")
 	})

@@ -53,11 +53,17 @@ type Payment struct {
 
 // PaymentSummary defines model for PaymentSummary.
 type PaymentSummary struct {
+	// Completed Total number of completed payment
+	Completed *int `json:"completed,omitempty"`
+
 	// Failed Total number of failed payment
 	Failed *int `json:"failed,omitempty"`
 
-	// Success Total number of success payment
-	Success *int `json:"success,omitempty"`
+	// Pending Total number of pending payment
+	Pending *int `json:"pending,omitempty"`
+
+	// Total Total all payment
+	Total *int `json:"total,omitempty"`
 }
 
 // User defines model for User.
@@ -119,6 +125,9 @@ type GetDashboardV1PaymentsParams struct {
 
 	// Status status of payment (completed , processing , or failed)
 	Status *string `form:"status,omitempty" json:"status,omitempty"`
+
+	// Id payment id
+	Id *string `form:"id,omitempty" json:"id,omitempty"`
 }
 
 // PostDashboardV1AuthLoginJSONRequestBody defines body for PostDashboardV1AuthLogin for application/json ContentType.
@@ -256,6 +265,14 @@ func (siw *ServerInterfaceWrapper) GetDashboardV1Payments(w http.ResponseWriter,
 	err = runtime.BindQueryParameter("form", true, false, "status", r.URL.Query(), &params.Status)
 	if err != nil {
 		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "id" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "id", r.URL.Query(), &params.Id)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
 		return
 	}
 
@@ -399,29 +416,30 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
+	"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",
+	"db36OwAA//90u1IKDxQAAA==",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

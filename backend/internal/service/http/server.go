@@ -7,10 +7,12 @@ import (
 	"os"
 	"time"
 
+	"github.com/fajrinajiseno/mygolangapp/internal/config"
 	"github.com/fajrinajiseno/mygolangapp/internal/middleware"
 	"github.com/fajrinajiseno/mygolangapp/internal/openapigen"
 	"github.com/getkin/kin-openapi/openapi3filter"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/cors"
 	oapinethttpmw "github.com/oapi-codegen/nethttp-middleware"
 	swgui "github.com/swaggest/swgui/v5"
 	"sigs.k8s.io/yaml"
@@ -24,14 +26,15 @@ const (
 	readTimeout  = 10
 	writeTimeout = 10
 	idleTimeout  = 60
+	corsMaxAge   = 300
 )
 
-func NewServer(apiHandler openapigen.ServerInterface) *Server {
+func NewServer(apiHandler openapigen.ServerInterface, openapiYamlPath string) *Server {
 	swagger, err := openapigen.GetSwagger()
 	if err != nil {
 		log.Fatalf("failed to load swagger: %v", err)
 	}
-	openapiJSON, err := loadOpenAPIAsJSON("../openapi.yaml")
+	openapiJSON, err := loadOpenAPIAsJSON(openapiYamlPath)
 	if err != nil {
 		log.Fatalf("failed to loadOpenAPIAsJSON: %v", err)
 	}
@@ -41,9 +44,22 @@ func NewServer(apiHandler openapigen.ServerInterface) *Server {
 	r.Use(middleware.LoggingMiddleware)
 	r.Use(middleware.ContextMiddleware)
 
+	r.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{config.Cors},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: true,
+		MaxAge:           corsMaxAge,
+	}))
+
 	r.Get("/openapi.json", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.Write(openapiJSON)
+		_, err := w.Write(openapiJSON)
+		if err != nil {
+			http.Error(w, "internal server error", http.StatusInternalServerError)
+			return
+		}
 	})
 
 	r.Handle("/docs/*", swgui.New("Dashboard API Docs", "/openapi.json", "/docs/"))
@@ -108,19 +124,14 @@ func (s *Server) Routes() http.Handler {
 }
 
 func loadOpenAPIAsJSON(yamlPath string) ([]byte, error) {
-	// Prefer embedded file if present by uncommenting and returning it here.
-
-	// read yaml file
 	yamlData, err := os.ReadFile(yamlPath)
 	if err != nil {
 		return nil, err
 	}
-	// convert YAML to JSON (preserves structure)
 	jsonData, err := yaml.YAMLToJSON(yamlData)
 	if err != nil {
 		return nil, err
 	}
-	// Optionally prettify:
 	var pretty json.RawMessage
 	if err := json.Unmarshal(jsonData, &pretty); err == nil {
 		out, _ := json.MarshalIndent(pretty, "", "  ")

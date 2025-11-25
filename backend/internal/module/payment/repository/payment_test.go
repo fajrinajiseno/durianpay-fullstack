@@ -29,23 +29,30 @@ func TestGetPayments_Success(t *testing.T) {
 		AddRow("p1", "m1", 100.0, "pending", time.Now()).
 		AddRow("p2", "m2", 200.0, "completed", time.Now())
 
-	mock.ExpectQuery(regexp.QuoteMeta("SELECT id, merchant, amount, status, created_at FROM payments WHERE status = ? ORDER BY created_at ASC LIMIT ? OFFSET ?")).
-		WithArgs("completed", 10, 1).
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT id, merchant, amount, status, created_at FROM payments WHERE status = ? AND id = ? ORDER BY created_at ASC LIMIT ? OFFSET ?")).
+		WithArgs("completed", "1", 10, 1).
 		WillReturnRows(rows)
 
-	mock.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(1) FROM payments")).
-		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(2))
-	mock.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(1) FROM payments WHERE status = 'completed'")).
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(1) FROM payments WHERE status = ? AND id = ?")).
+		WithArgs("completed", "1").
 		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(1))
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(1) FROM payments")).
+		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(4))
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(1) FROM payments WHERE status = 'completed'")).
+		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(2))
 	mock.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(1) FROM payments WHERE status = 'failed'")).
-		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(0))
+		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(1))
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(1) FROM payments WHERE status = 'pending'")).
+		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(1))
 
-	items, total, totalSuccess, totalFailed, err := repo.GetPayments("completed", "created_at", 10, 1)
+	items, totalSummary, err := repo.GetPayments("completed", "1", "created_at", 10, 1)
 	assert.NoError(t, err)
 	assert.Len(t, items, 2)
-	assert.Equal(t, 2, total)
-	assert.Equal(t, 1, totalSuccess)
-	assert.Equal(t, 0, totalFailed)
+	assert.Equal(t, 1, totalSummary.TotalByFiler)
+	assert.Equal(t, 4, totalSummary.Total)
+	assert.Equal(t, 2, totalSummary.TotalCompleted)
+	assert.Equal(t, 1, totalSummary.TotalFailed)
+	assert.Equal(t, 1, totalSummary.TotalPending)
 
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Fatalf("there were unfulfilled expectations: %v", err)
@@ -60,7 +67,7 @@ func TestGetPayments_QueryError(t *testing.T) {
 	mock.ExpectQuery(regexp.QuoteMeta("SELECT id, merchant, amount, status, created_at FROM payments ORDER BY created_at ASC")).
 		WillReturnError(errors.New("db select failed"))
 
-	_, _, _, _, err := repo.GetPayments("", "created_at", 0, 0)
+	_, _, err := repo.GetPayments("", "", "created_at", 0, 0)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "db error")
 

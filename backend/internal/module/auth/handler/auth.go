@@ -5,10 +5,10 @@ import (
 	"io"
 	"net/http"
 
-	authUsecase "github.com/fajrinajiseno/mygolangapp/internal/auth/usecase"
 	"github.com/fajrinajiseno/mygolangapp/internal/entity"
+	authUsecase "github.com/fajrinajiseno/mygolangapp/internal/module/auth/usecase"
+	paymentUsecase "github.com/fajrinajiseno/mygolangapp/internal/module/payment/usecase"
 	"github.com/fajrinajiseno/mygolangapp/internal/openapigen"
-	paymentUsecase "github.com/fajrinajiseno/mygolangapp/internal/payment/usecase"
 	"github.com/fajrinajiseno/mygolangapp/internal/transport"
 )
 

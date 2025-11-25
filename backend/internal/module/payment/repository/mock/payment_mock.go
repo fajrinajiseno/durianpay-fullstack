@@ -35,21 +35,19 @@ func (m *MockPaymentRepository) EXPECT() *MockPaymentRepositoryMockRecorder {
 }
 
 // GetPayments mocks base method.
-func (m *MockPaymentRepository) GetPayments(status, sortExpr string, limit, offset int) ([]*entity.Payment, int, int, int, error) {
+func (m *MockPaymentRepository) GetPayments(status, id, sortExpr string, limit, offset int) ([]*entity.Payment, *entity.PaymentSummary, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetPayments", status, sortExpr, limit, offset)
+	ret := m.ctrl.Call(m, "GetPayments", status, id, sortExpr, limit, offset)
 	ret0, _ := ret[0].([]*entity.Payment)
-	ret1, _ := ret[1].(int)
-	ret2, _ := ret[2].(int)
-	ret3, _ := ret[3].(int)
-	ret4, _ := ret[4].(error)
-	return ret0, ret1, ret2, ret3, ret4
+	ret1, _ := ret[1].(*entity.PaymentSummary)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
 }
 
 // GetPayments indicates an expected call of GetPayments.
-func (mr *MockPaymentRepositoryMockRecorder) GetPayments(status, sortExpr, limit, offset interface{}) *gomock.Call {
+func (mr *MockPaymentRepositoryMockRecorder) GetPayments(status, id, sortExpr, limit, offset interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPayments", reflect.TypeOf((*MockPaymentRepository)(nil).GetPayments), status, sortExpr, limit, offset)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPayments", reflect.TypeOf((*MockPaymentRepository)(nil).GetPayments), status, id, sortExpr, limit, offset)
 }
 
 // Review mocks base method.

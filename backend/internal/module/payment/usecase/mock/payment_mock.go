@@ -36,21 +36,19 @@ func (m *MockPaymentUsecase) EXPECT() *MockPaymentUsecaseMockRecorder {
 }
 
 // ListPayment mocks base method.
-func (m *MockPaymentUsecase) ListPayment(status, sortExpr string, limit, offset int) ([]*entity.Payment, int, int, int, error) {
+func (m *MockPaymentUsecase) ListPayment(status, id, sortExpr string, limit, offset int) ([]*entity.Payment, *entity.PaymentSummary, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListPayment", status, sortExpr, limit, offset)
+	ret := m.ctrl.Call(m, "ListPayment", status, id, sortExpr, limit, offset)
 	ret0, _ := ret[0].([]*entity.Payment)
-	ret1, _ := ret[1].(int)
-	ret2, _ := ret[2].(int)
-	ret3, _ := ret[3].(int)
-	ret4, _ := ret[4].(error)
-	return ret0, ret1, ret2, ret3, ret4
+	ret1, _ := ret[1].(*entity.PaymentSummary)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
 }
 
 // ListPayment indicates an expected call of ListPayment.
-func (mr *MockPaymentUsecaseMockRecorder) ListPayment(status, sortExpr, limit, offset interface{}) *gomock.Call {
+func (mr *MockPaymentUsecaseMockRecorder) ListPayment(status, id, sortExpr, limit, offset interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListPayment", reflect.TypeOf((*MockPaymentUsecase)(nil).ListPayment), status, sortExpr, limit, offset)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListPayment", reflect.TypeOf((*MockPaymentUsecase)(nil).ListPayment), status, id, sortExpr, limit, offset)
 }
 
 // ReviewPayment mocks base method.

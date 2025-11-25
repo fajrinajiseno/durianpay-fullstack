@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/fajrinajiseno/mygolangapp/internal/auth/repository/mock"
 	"github.com/fajrinajiseno/mygolangapp/internal/entity"
+	"github.com/fajrinajiseno/mygolangapp/internal/module/auth/repository/mock"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"

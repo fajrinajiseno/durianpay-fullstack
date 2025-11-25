@@ -6,13 +6,13 @@ import (
 	"time"
 
 	"github.com/fajrinajiseno/mygolangapp/internal/api"
-	ah "github.com/fajrinajiseno/mygolangapp/internal/auth/handler"
-	ar "github.com/fajrinajiseno/mygolangapp/internal/auth/repository"
-	au "github.com/fajrinajiseno/mygolangapp/internal/auth/usecase"
 	"github.com/fajrinajiseno/mygolangapp/internal/config"
-	ph "github.com/fajrinajiseno/mygolangapp/internal/payment/handler"
-	pr "github.com/fajrinajiseno/mygolangapp/internal/payment/repository"
-	pu "github.com/fajrinajiseno/mygolangapp/internal/payment/usecase"
+	ah "github.com/fajrinajiseno/mygolangapp/internal/module/auth/handler"
+	ar "github.com/fajrinajiseno/mygolangapp/internal/module/auth/repository"
+	au "github.com/fajrinajiseno/mygolangapp/internal/module/auth/usecase"
+	ph "github.com/fajrinajiseno/mygolangapp/internal/module/payment/handler"
+	pr "github.com/fajrinajiseno/mygolangapp/internal/module/payment/repository"
+	pu "github.com/fajrinajiseno/mygolangapp/internal/module/payment/usecase"
 	srv "github.com/fajrinajiseno/mygolangapp/internal/service/http"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/joho/godotenv"
@@ -22,7 +22,6 @@ import (
 
 const (
 	sleepSecond = 2
-	hour24      = 24
 )
 
 func main() {
@@ -38,10 +37,15 @@ func main() {
 		log.Fatal(err)
 	}
 
+	JwtExpiredDuration, err := time.ParseDuration(config.JwtExpired)
+	if err != nil {
+		panic(err)
+	}
+
 	userRepo := ar.NewUserRepo(db)
 	paymentRepo := pr.NewPaymentRepo(db)
 
-	authUC := au.NewAuthUsecase(userRepo, config.JwtSecret, hour24*time.Hour)
+	authUC := au.NewAuthUsecase(userRepo, config.JwtSecret, JwtExpiredDuration)
 	paymentUC := pu.NewPaymentUsecase(paymentRepo, userRepo)
 
 	authH := ah.NewAuthHandler(paymentUC, authUC)
@@ -52,7 +56,7 @@ func main() {
 		Payment: paymentH,
 	}
 
-	server := srv.NewServer(apiHandler)
+	server := srv.NewServer(apiHandler, config.OpenapiYamlLocation)
 
 	addr := config.HttpAddress
 	log.Printf("starting server on %s", addr)

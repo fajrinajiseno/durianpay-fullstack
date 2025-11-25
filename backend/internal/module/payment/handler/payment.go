@@ -6,8 +6,8 @@ import (
 	"net/http"
 
 	"github.com/fajrinajiseno/mygolangapp/internal/entity"
+	"github.com/fajrinajiseno/mygolangapp/internal/module/payment/usecase"
 	"github.com/fajrinajiseno/mygolangapp/internal/openapigen"
-	"github.com/fajrinajiseno/mygolangapp/internal/payment/usecase"
 	"github.com/fajrinajiseno/mygolangapp/internal/transport"
 )
 
@@ -26,6 +26,7 @@ func (a *PaymentHandler) GetDashboardV1Payments(w http.ResponseWriter, r *http.R
 	offset := 0
 	sort := "-created_at"
 	status := ""
+	paymentId := ""
 
 	if body.Limit != nil {
 		limit = *body.Limit
@@ -43,7 +44,11 @@ func (a *PaymentHandler) GetDashboardV1Payments(w http.ResponseWriter, r *http.R
 		status = *body.Status
 	}
 
-	payments, total, totalSuccess, totalFailed, err := a.paymentUC.ListPayment(status, sort, limit, offset)
+	if body.Id != nil {
+		paymentId = *body.Id
+	}
+
+	payments, summary, err := a.paymentUC.ListPayment(status, paymentId, sort, limit, offset)
 	if err != nil {
 		transport.WriteError(w, err)
 		return
@@ -62,10 +67,12 @@ func (a *PaymentHandler) GetDashboardV1Payments(w http.ResponseWriter, r *http.R
 	err = json.NewEncoder(w).Encode(openapigen.PaymentListResponse{Meta: &openapigen.PaginationMeta{
 		Limit:  body.Limit,
 		Offset: body.Offset,
-		Total:  &total,
+		Total:  &summary.TotalByFiler,
 	}, Summary: &openapigen.PaymentSummary{
-		Failed:  &totalFailed,
-		Success: &totalSuccess,
+		Total:     &summary.Total,
+		Failed:    &summary.TotalFailed,
+		Completed: &summary.TotalCompleted,
+		Pending:   &summary.TotalPending,
 	}, Payments: &genPayments})
 	if err != nil {
 		transport.WriteAppError(w, entity.ErrorInternal("internal server error"))

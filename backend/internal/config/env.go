@@ -8,8 +8,11 @@ import (
 )
 
 var (
-	JwtSecret   = []byte(getEnv("JWT_SECRET", "dev-secret-replace-me"))
-	HttpAddress = getEnv("HTTP_ADDR", ":8080")
+	JwtSecret           = []byte(getEnv("JWT_SECRET", "dev-secret-replace-me"))
+	JwtExpired          = getEnv("JWT_EXPIRED", "24h")
+	HttpAddress         = getEnv("HTTP_ADDR", ":8080")
+	Cors                = getEnv("CORS", "http://localhost:3000")
+	OpenapiYamlLocation = getEnv("OPENAPIYAML_LOCATION", "../openapi.yaml")
 )
 
 type contextUserId string

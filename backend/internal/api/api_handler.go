@@ -3,9 +3,9 @@ package api
 import (
 	"net/http"
 
-	ah "github.com/fajrinajiseno/mygolangapp/internal/auth/handler"
+	ah "github.com/fajrinajiseno/mygolangapp/internal/module/auth/handler"
+	ph "github.com/fajrinajiseno/mygolangapp/internal/module/payment/handler"
 	"github.com/fajrinajiseno/mygolangapp/internal/openapigen"
-	ph "github.com/fajrinajiseno/mygolangapp/internal/payment/handler"
 )
 
 type APIHandler struct {

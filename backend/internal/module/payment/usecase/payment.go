@@ -3,15 +3,15 @@ package usecase
 import (
 	"context"
 
-	authRepository "github.com/fajrinajiseno/mygolangapp/internal/auth/repository"
 	"github.com/fajrinajiseno/mygolangapp/internal/entity"
 	"github.com/fajrinajiseno/mygolangapp/internal/middleware"
-	paymentRepository "github.com/fajrinajiseno/mygolangapp/internal/payment/repository"
+	authRepository "github.com/fajrinajiseno/mygolangapp/internal/module/auth/repository"
+	paymentRepository "github.com/fajrinajiseno/mygolangapp/internal/module/payment/repository"
 )
 
 //go:generate mockgen -source payment.go -destination mock/payment_mock.go -package=mock
 type PaymentUsecase interface {
-	ListPayment(status string, sortExpr string, limit int, offset int) ([]*entity.Payment, int, int, int, error)
+	ListPayment(status string, id string, sortExpr string, limit int, offset int) ([]*entity.Payment, *entity.PaymentSummary, error)
 	ReviewPayment(ctx context.Context, id string) (string, error)
 }
 
@@ -24,8 +24,8 @@ func NewPaymentUsecase(pr paymentRepository.PaymentRepository, ur authRepository
 	return &Payment{paymentRepo: pr, userRepo: ur}
 }
 
-func (u *Payment) ListPayment(status string, sortExpr string, limit int, offset int) ([]*entity.Payment, int, int, int, error) {
-	return u.paymentRepo.GetPayments(status, sortExpr, limit, offset)
+func (u *Payment) ListPayment(status string, id string, sortExpr string, limit int, offset int) ([]*entity.Payment, *entity.PaymentSummary, error) {
+	return u.paymentRepo.GetPayments(status, id, sortExpr, limit, offset)
 }
 
 func (u *Payment) ReviewPayment(ctx context.Context, id string) (string, error) {
