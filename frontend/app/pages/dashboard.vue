@@ -10,6 +10,7 @@
             :disabled="isLoading"
             placeholder="Filter Payment ID..."
             class="mr-2"
+            data-testid="payment-search-id"
             @update:model-value="searchPaymentId"
           />
           <USelect
@@ -18,6 +19,7 @@
             :disabled="isLoading"
             placeholder="Select status"
             :items="statusOption"
+            data-testid="payment-select-status"
             class="w-48 mr-2"
             @change="updateSelectedStatus"
           />
@@ -25,6 +27,7 @@
             v-if="isShowReset"
             color="neutral"
             variant="outline"
+            data-testid="payment-reset"
             @click="resetFilter"
             >Reset Filter</UButton
           >
@@ -35,25 +38,29 @@
             <UBadge color="info" variant="subtle" class="capitalize mr-1"
               >Total</UBadge
             >
-            <b>: {{ summary?.total }}</b>
+            <b data-testid="payment-summary-total">: {{ summary?.total }}</b>
           </div>
           <div class="mr-2">
             <UBadge color="success" variant="subtle" class="capitalize mr-1"
               >completed</UBadge
             >
-            <b>: {{ summary?.completed }}</b>
+            <b data-testid="payment-summary-completed"
+              >: {{ summary?.completed }}</b
+            >
           </div>
           <div class="mr-2">
             <UBadge color="error" variant="subtle" class="capitalize mr-1"
               >failed</UBadge
             >
-            <b>: {{ summary?.failed }}</b>
+            <b data-testid="payment-summary-failed">: {{ summary?.failed }}</b>
           </div>
           <div>
             <UBadge color="neutral" variant="subtle" class="capitalize mr-1"
               >pending</UBadge
             >
-            <b>: {{ summary?.pending }}</b>
+            <b data-testid="payment-summary-pending"
+              >: {{ summary?.pending }}</b
+            >
           </div>
         </div>
       </div>
@@ -66,7 +73,11 @@
       >
         <template #empty>
           <div v-if="error">
-            <UEmpty title="Error" :description="emptyText">
+            <UEmpty
+              title="Error"
+              :description="emptyText"
+              data-testid="payment-error"
+            >
               <template #actions>
                 <UButton
                   icon="i-lucide-refresh-cw"
@@ -89,6 +100,7 @@
                   :disabled="isLoading"
                   size="xl"
                   class="mt-2"
+                  data-testid="payment-nodata"
                   @click="reset"
                   >Reset</UButton
                 >
@@ -117,7 +129,6 @@
 </template>
 
 <script setup lang="ts">
-import { useAuthStore } from '../store/auth'
 import type { Payment } from '../../generated/openapi-client'
 import type { TableColumn } from '@nuxt/ui'
 import { debounce } from 'lodash-es'
@@ -155,19 +166,14 @@ const {
 } = await useAsyncData(
   route.fullPath,
   async () => {
-    try {
-      const paymentResponse = await api.dashboardV1PaymentsGet({
-        ...(paymentId.value ? { id: paymentId.value } : {}),
-        ...(selectedStatus.value ? { status: selectedStatus.value } : {}),
-        offset: offset.value,
-        limit: limit.value,
-        sort: sort.value
-      })
-      return { paymentResponse }
-    } catch (error) {
-      const errorParsed = await usehandleError(error)
-      throw errorParsed
-    }
+    const paymentResponse = await api.dashboardV1PaymentsGet({
+      ...(paymentId.value ? { id: paymentId.value } : {}),
+      ...(selectedStatus.value ? { status: selectedStatus.value } : {}),
+      offset: offset.value,
+      limit: limit.value,
+      sort: sort.value
+    })
+    return { paymentResponse }
   },
   { server: false }
 )
@@ -184,7 +190,7 @@ const isLoading = computed(() => {
 const payments = computed(() => {
   return paymentData?.value?.paymentResponse.payments?.map((item) => ({
     ...item,
-    action: auth.user?.role === 'operation'
+    action: auth.getUser()?.role === 'operation'
   }))
 })
 
@@ -298,6 +304,7 @@ const columns: TableColumn<Payment>[] = [
             : 'i-lucide-arrow-down-wide-narrow'
           : 'i-lucide-arrow-up-down',
         class: '-mx-2.5 text-right',
+        'data-testid': 'payment-sort-amount',
         onClick: () => {
           column.toggleSorting(column.getIsSorted() === 'asc')
           updateSort(column.getIsSorted() === 'asc' ? 'amount' : '-amount')
@@ -328,6 +335,7 @@ const columns: TableColumn<Payment>[] = [
             : 'i-lucide-arrow-down-wide-narrow'
           : 'i-lucide-arrow-up-down',
         class: '-mx-2.5',
+        'data-testid': 'payment-sort-created_at',
         onClick: () => {
           column.toggleSorting(column.getIsSorted() === 'asc')
           updateSort(
@@ -363,6 +371,7 @@ const columns: TableColumn<Payment>[] = [
         ? h(
             UButton,
             {
+              'data-testid': `payment-review-${row.getValue('id')}`,
               onClick: () => handleClickReview(row.getValue('id'))
             },
             () => 'Review'

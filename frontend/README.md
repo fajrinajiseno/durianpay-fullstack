@@ -7,15 +7,30 @@ Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduct
 Make sure to install dependencies:
 
 ```bash
-# pnpm
 pnpm install
 ```
 
 Make sure to openapi generated:
 
 ```bash
-# pnpm
 pnpm openapigen
+```
+
+## Test
+
+Running unit test:
+
+```bash
+pnpm test
+```
+
+## Prettier and Lint
+
+Running unit test:
+
+```bash
+pnpm lint:fix
+pnpm format
 ```
 
 ## Development Server

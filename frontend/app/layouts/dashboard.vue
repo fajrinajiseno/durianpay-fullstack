@@ -1,5 +1,5 @@
 <template>
-  <UDashboardGroup v-show="auth.user">
+  <UDashboardGroup v-show="auth.getUser()">
     <UDashboardSidebar
       collapsible
       resizable
@@ -23,7 +23,7 @@
 
         <ClientOnly>
           <UNavigationMenu
-            v-if="auth.user"
+            v-if="auth.getUser()"
             :collapsed="collapsed"
             :items="items[1]"
             orientation="vertical"
@@ -44,7 +44,6 @@
 </template>
 
 <script setup lang="ts">
-import { useAuthStore } from '../store/auth'
 import type { NavigationMenuItem } from '@nuxt/ui'
 
 const auth = useAuthStore()
@@ -59,11 +58,11 @@ const items: NavigationMenuItem[][] = [
   ],
   [
     {
-      label: auth.user?.email,
+      label: auth.getUser()?.email,
       icon: 'i-lucide-user'
     },
     {
-      label: auth.user?.role,
+      label: auth.getUser()?.role,
       icon: 'i-lucide-id-card-lanyard'
     },
     {
@@ -72,7 +71,6 @@ const items: NavigationMenuItem[][] = [
       class: 'pointer',
       onSelect: () => {
         auth.logout()
-        window.location.assign('/login')
       }
     }
   ]

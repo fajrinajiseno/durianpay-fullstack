@@ -1,6 +1,6 @@
 <template>
   <div
-    v-show="!auth.user"
+    v-show="!auth.getUser()"
     class="flex flex-col items-center justify-center gap-4 p-4"
   >
     <UPageCard class="w-full max-w-md">
@@ -18,9 +18,9 @@
 </template>
 
 <script setup lang="ts">
+import type { ModelError } from '../../generated/openapi-client'
 import * as z from 'zod'
 import type { FormSubmitEvent, AuthFormField } from '@nuxt/ui'
-import { useAuthStore } from '~/store/auth'
 
 definePageMeta({
   middleware: 'auth'
@@ -73,13 +73,11 @@ async function onSubmit(payload: FormSubmitEvent<Schema>) {
       path: '/dashboard'
     })
   } catch (error) {
-    const errorParsed = await usehandleError(error)
     toast.add({
-      title: `${errorParsed.code}`,
-      description: errorParsed.message,
+      title: `${(error as ModelError).code}`,
+      description: (error as ModelError).message,
       color: 'error'
     })
-    console.log(errorParsed)
   }
 }
 </script>

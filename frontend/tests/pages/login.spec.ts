@@ -5,37 +5,39 @@ import AuthForm from '@nuxt/ui/components/AuthForm.vue'
 
 const dashboardV1AuthLoginPostMockMock = vi.fn()
 const toastAddMock = vi.fn()
+const setUserMock = vi.fn()
 
 beforeEach(() => {
-  const { useGeneratedClientMock, usehandleErrorMock, useToastMock } =
-    vi.hoisted(() => {
+  const { useGeneratedClientMock, useToastMock, useAuthStoreMock } = vi.hoisted(
+    () => {
       return {
         useGeneratedClientMock: vi.fn(() => {
           return {
             api: { dashboardV1AuthLoginPost: dashboardV1AuthLoginPostMockMock }
           }
         }),
-        usehandleErrorMock: vi.fn(() => {
-          return {
-            code: '500',
-            message: 'error'
-          }
-        }),
         useToastMock: vi.fn(() => {
           return {
             add: toastAddMock
           }
+        }),
+        useAuthStoreMock: vi.fn(() => {
+          return {
+            getUser: () => null,
+            setUser: setUserMock
+          }
         })
       }
-    })
+    }
+  )
   mockNuxtImport('useGeneratedClient', () => {
     return useGeneratedClientMock
   })
-  mockNuxtImport('usehandleError', () => {
-    return usehandleErrorMock
-  })
   mockNuxtImport('useToast', () => {
     return useToastMock
+  })
+  mockNuxtImport('useAuthStore', () => {
+    return useAuthStoreMock
   })
 })
 
@@ -61,6 +63,11 @@ it('Success Login', async () => {
       password: 'password'
     }
   })
+  expect(setUserMock).toBeCalledWith({
+    email: 'operation@test.com',
+    role: 'cs',
+    token: 'token'
+  })
   expect(toastAddMock).toBeCalledWith({
     title: 'success login'
   })
@@ -68,12 +75,8 @@ it('Success Login', async () => {
 
 it('Error Login', async () => {
   dashboardV1AuthLoginPostMockMock.mockRejectedValueOnce({
-    response: {
-      text: vi.fn().mockResolvedValueOnce({
-        code: '500',
-        message: 'error'
-      })
-    }
+    code: '500',
+    message: 'error'
   })
   const page = await mountSuspended(Login, { route: '/login' })
   const UAuthForm = page.findComponent(AuthForm)
