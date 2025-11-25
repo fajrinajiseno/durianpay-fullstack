@@ -1,0 +1,45 @@
+{
+  "name": "my-nuxt-app",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "lint": "eslint --ext .ts,.js,.vue .",
+    "lint:fix": "eslint --ext .ts,.js,.vue . --fix",
+    "format": "prettier --write .",
+    "openapigen": "npx @openapitools/openapi-generator-cli generate -i ../openapi.yaml -g typescript-fetch -o ./generated/openapi-client"
+  },
+  "dependencies": {
+    "@nuxt/eslint": "1.10.0",
+    "@nuxt/hints": "1.0.0-alpha.1",
+    "@nuxt/image": "2.0.0",
+    "@nuxt/scripts": "0.13.0",
+    "@nuxt/test-utils": "3.20.1",
+    "@nuxt/ui": "4.2.0",
+    "@pinia/nuxt": "^0.11.3",
+    "@tanstack/vue-table": "^8.21.3",
+    "@unhead/vue": "^2.0.19",
+    "eslint": "^9.39.1",
+    "lodash-es": "^4.17.21",
+    "nuxt": "^4.2.1",
+    "pinia": "^3.0.4",
+    "typescript": "^5.9.3",
+    "vue": "^3.5.24",
+    "vue-router": "^4.6.3",
+    "zod": "^4.1.13"
+  },
+  "devDependencies": {
+    "@types/lodash-es": "^4.17.12",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
+    "openapi-generator-cli": "^1.0.0",
+    "openapi-typescript": "^7.10.1",
+    "prettier": "^3.6.2",
+    "sass": "^1.94.2",
+    "tailwindcss": "^4.1.17"
+  }
+}
