@@ -49,16 +49,21 @@ func (r *Payment) GetPayments(status, id string, sortExpr string, limit, offset 
 	q := "SELECT id, merchant, amount, status, created_at FROM payments"
 	where := []string{}
 	args := []interface{}{}
+	qt := "SELECT COUNT(1) FROM payments"
+	argsT := []interface{}{}
 	if status != "" {
 		where = append(where, "status = ?")
 		args = append(args, status)
+		argsT = append(argsT, status)
 	}
 	if id != "" {
 		where = append(where, "id = ?")
 		args = append(args, id)
+		argsT = append(argsT, id)
 	}
 	if len(where) > 0 {
 		q += " WHERE " + strings.Join(where, " AND ")
+		qt += " WHERE " + strings.Join(where, " AND ")
 	}
 	if col != "" && dir != "" {
 		q += fmt.Sprintf(" ORDER BY %s %s", col, dir)
@@ -86,51 +91,15 @@ func (r *Payment) GetPayments(status, id string, sortExpr string, limit, offset 
 		res = append(res, &p)
 	}
 
-	var totalByFiler, total, totalCompleted, totalFailed, totalPending int
+	var totalByFiler int
 
-	qt := "SELECT COUNT(1) FROM payments"
-	whereT := []string{}
-	argsT := []interface{}{}
-	if status != "" {
-		whereT = append(whereT, "status = ?")
-		argsT = append(argsT, status)
-	}
-	if id != "" {
-		whereT = append(whereT, "id = ?")
-		argsT = append(argsT, id)
-	}
-	if len(whereT) > 0 {
-		qt += " WHERE " + strings.Join(where, " AND ")
-	}
 	row := r.db.QueryRow(qt, argsT...)
 	err = row.Scan(&totalByFiler)
 	if err != nil {
 		return nil, nil, entity.WrapError(err, entity.ErrorCodeInternal, "db error")
 	}
 
-	row = r.db.QueryRow("SELECT COUNT(1) FROM payments")
-	err = row.Scan(&total)
-	if err != nil {
-		return nil, nil, entity.WrapError(err, entity.ErrorCodeInternal, "db error")
-	}
-
-	row = r.db.QueryRow("SELECT COUNT(1) FROM payments WHERE status = 'completed'")
-	err = row.Scan(&totalCompleted)
-	if err != nil {
-		return nil, nil, entity.WrapError(err, entity.ErrorCodeInternal, "db error")
-	}
-
-	row = r.db.QueryRow("SELECT COUNT(1) FROM payments WHERE status = 'failed'")
-	err = row.Scan(&totalFailed)
-	if err != nil {
-		return nil, nil, entity.WrapError(err, entity.ErrorCodeInternal, "db error")
-	}
-
-	row = r.db.QueryRow("SELECT COUNT(1) FROM payments WHERE status = 'pending'")
-	err = row.Scan(&totalPending)
-	if err != nil {
-		return nil, nil, entity.WrapError(err, entity.ErrorCodeInternal, "db error")
-	}
+	total, totalCompleted, totalFailed, totalPending := getSummary(r.db)
 
 	return res, &entity.PaymentSummary{
 		TotalByFiler:   totalByFiler,
@@ -151,4 +120,33 @@ func (r *Payment) Review(id string) (string, error) {
 		return "", entity.WrapError(err, entity.ErrorCodeInternal, "db error")
 	}
 	return "Success Review", nil
+}
+
+func getSummary(db *sql.DB) (int, int, int, int) {
+	var total, totalCompleted, totalFailed, totalPending int
+
+	row := db.QueryRow("SELECT COUNT(1) FROM payments")
+	err := row.Scan(&total)
+	if err != nil {
+		return 0, 0, 0, 0
+	}
+
+	row = db.QueryRow("SELECT COUNT(1) FROM payments WHERE status = 'completed'")
+	err = row.Scan(&totalCompleted)
+	if err != nil {
+		return 0, 0, 0, 0
+	}
+
+	row = db.QueryRow("SELECT COUNT(1) FROM payments WHERE status = 'failed'")
+	err = row.Scan(&totalFailed)
+	if err != nil {
+		return 0, 0, 0, 0
+	}
+
+	row = db.QueryRow("SELECT COUNT(1) FROM payments WHERE status = 'pending'")
+	err = row.Scan(&totalPending)
+	if err != nil {
+		return 0, 0, 0, 0
+	}
+	return total, totalCompleted, totalFailed, totalPending
 }

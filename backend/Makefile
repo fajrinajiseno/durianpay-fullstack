@@ -31,6 +31,7 @@ help:
 
 dep:
 	@go mod tidy
+	@go mod vendor
 
 run:
 	CGO_ENABLED=1 $(go_bin) run main.go

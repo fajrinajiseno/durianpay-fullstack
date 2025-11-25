@@ -1,10 +1,13 @@
 package http
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/fajrinajiseno/mygolangapp/internal/config"
@@ -105,7 +108,6 @@ func NewServer(apiHandler openapigen.ServerInterface, openapiYamlPath string) *S
 }
 
 func (s *Server) Start(addr string) {
-	log.Printf("listening on %s", addr)
 	service := &http.Server{
 		Addr:         addr,
 		Handler:      s.router,
@@ -113,10 +115,30 @@ func (s *Server) Start(addr string) {
 		WriteTimeout: writeTimeout * time.Second,
 		IdleTimeout:  idleTimeout * time.Second,
 	}
-	err := service.ListenAndServe()
-	if err != nil {
-		log.Fatal(err.Error())
+	go func() {
+		log.Printf("listening on %s", addr)
+		err := service.ListenAndServe()
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+	}()
+
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
+
+	<-stop
+	log.Println("Shutting down gracefully...")
+
+	// Timeout for shutdown
+	const shutdownTimeout = 10 * time.Second
+	ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
+	defer cancel()
+
+	if err := service.Shutdown(ctx); err != nil {
+		log.Fatalf("Forced shutdown: %v", err)
 	}
+
+	log.Println("Server stopped cleanly ✔")
 }
 
 func (s *Server) Routes() http.Handler {

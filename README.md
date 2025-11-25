@@ -22,6 +22,15 @@ install all related requirements:
 ```bash
 gvm install go1.24
 gvm use go1.24
+```
+
+incase need to reload env after install new Go:
+```bash
+source ~/.zshrc
+```
+based on your terminal like .bashrc
+
+```bash
 nvm install v24.11.1
 nvm use v24.11.1
 npm install -g pnpm
@@ -32,6 +41,7 @@ Run backend server on local:
 ```bash
 cd backend
 cp env.sample .env
+make tool-openapi
 make openapi-gen
 make dep
 make gen-secret
@@ -91,5 +101,6 @@ cs credentials:
 }
 ```
 
+evidences [video](https://drive.google.com/file/d/1nKzMlrv8ed5rqpXO_D9KcxXeWU4iEAao/view?usp=sharing)
 see backend [README.md](backend/README.md)
 see frontend [README.md](frontend/README.md)

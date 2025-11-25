@@ -17,6 +17,7 @@ make gen-secret
 Run server:
 
 ```bash
+make tool-openapi
 make openapi-gen
 make dep
 make gen-secret

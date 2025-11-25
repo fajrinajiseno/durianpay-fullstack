@@ -20,10 +20,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-const (
-	sleepSecond = 2
-)
-
 func main() {
 	_ = godotenv.Load()
 
