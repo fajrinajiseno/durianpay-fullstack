@@ -1,6 +1,6 @@
 <template>
   <div
-    v-if="!auth.user"
+    v-show="!auth.user"
     class="flex flex-col items-center justify-center gap-4 p-4"
   >
     <UPageCard class="w-full max-w-md">
@@ -20,15 +20,15 @@
 <script setup lang="ts">
 import * as z from 'zod'
 import type { FormSubmitEvent, AuthFormField } from '@nuxt/ui'
-import { useAuthStore } from '../store/auth'
+import { useAuthStore } from '~/store/auth'
 
 definePageMeta({
   middleware: 'auth'
 })
 
 const auth = useAuthStore()
-
 const toast = useToast()
+const router = useRouter()
 
 const fields: AuthFormField[] = [
   {
@@ -69,7 +69,7 @@ async function onSubmit(payload: FormSubmitEvent<Schema>) {
       token: data.token!
     })
     toast.add({ title: 'success login' })
-    await navigateTo({
+    router.push({
       path: '/dashboard'
     })
   } catch (error) {
@@ -79,6 +79,7 @@ async function onSubmit(payload: FormSubmitEvent<Schema>) {
       description: errorParsed.message,
       color: 'error'
     })
+    console.log(errorParsed)
   }
 }
 </script>

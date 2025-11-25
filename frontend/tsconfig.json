@@ -14,5 +14,14 @@
     {
       "path": "./.nuxt/tsconfig.node.json"
     }
-  ]
+  ],
+  "compilerOptions": {
+    "strict": true,
+    "types": [
+      "@pinia/nuxt",
+      "vitest/importMeta",
+      "vitest/globals",
+      "vite/client"
+    ]
+  }
 }

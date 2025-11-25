@@ -11,7 +11,8 @@
     "lint": "eslint --ext .ts,.js,.vue .",
     "lint:fix": "eslint --ext .ts,.js,.vue . --fix",
     "format": "prettier --write .",
-    "openapigen": "npx @openapitools/openapi-generator-cli generate -i ../openapi.yaml -g typescript-fetch -o ./generated/openapi-client"
+    "openapigen": "npx @openapitools/openapi-generator-cli generate -i ../openapi.yaml -g typescript-fetch -o ./generated/openapi-client",
+    "test": "vitest run"
   },
   "dependencies": {
     "@nuxt/eslint": "1.10.0",
@@ -33,13 +34,20 @@
     "zod": "^4.1.13"
   },
   "devDependencies": {
+    "@pinia/testing": "^1.0.3",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/vue": "^8.1.0",
     "@types/lodash-es": "^4.17.12",
+    "@vitejs/plugin-vue": "^6.0.2",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.4",
+    "happy-dom": "^20.0.10",
+    "jsdom": "^27.2.0",
     "openapi-generator-cli": "^1.0.0",
     "openapi-typescript": "^7.10.1",
     "prettier": "^3.6.2",
     "sass": "^1.94.2",
-    "tailwindcss": "^4.1.17"
+    "tailwindcss": "^4.1.17",
+    "vitest": "^4.0.13"
   }
 }
